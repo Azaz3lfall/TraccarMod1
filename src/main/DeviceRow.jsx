@@ -72,7 +72,7 @@ const DeviceRow = ({ data, index, style }) => {
     }
     return (
       <>
-         {position.address} <br />
+         {position?.address || '...' } <br />
          {deviceSecondary && item[deviceSecondary] && `${item[deviceSecondary]} • `}
         <span className={classes[getStatusColor(item.status)]}>{status}</span>
       </>
