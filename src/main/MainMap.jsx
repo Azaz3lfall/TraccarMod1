@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useDispatch, useSelector } from 'react-redux';
@@ -24,6 +24,8 @@ const MainMap = ({ filteredPositions, selectedPosition, onEventsClick }) => {
   const dispatch = useDispatch();
 
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
+  const devices = useSelector((state) => state.devices.items);
+  const [totals, setTotals] = useState(null);
 
   const eventsAvailable = useSelector((state) => !!state.events.items.length);
 
@@ -32,6 +34,55 @@ const MainMap = ({ filteredPositions, selectedPosition, onEventsClick }) => {
   const onMarkerClick = useCallback((_, deviceId) => {
     dispatch(devicesActions.selectId(deviceId));
   }, [dispatch]);
+  const boxStyle = {
+    width: 55,
+    height: 55,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    borderColor: "white",
+    borderWidth: 2,
+    borderStyle: "solid",
+    boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
+    fontSize: 19,
+    fontWeight: "semibold",
+    };
+    const boxContainer = {
+    position: "absolute",
+    left: 380,
+    top: 10,
+    zIndex: 10000,
+    display: desktop ? "flex" : "none",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+    };
+
+    const getStatuses = () => {
+      const total = Object.values(devices).length;
+      const online = Object.values(devices).filter(
+      (d) => d.status === "online"
+      ).length;
+      const offline = Object.values(devices).filter(
+      (d) => d.status === "offline"
+      ).length;
+      const unknown = Object.values(devices).filter(
+      (d) => d.status === "unknown"
+      ).length;
+      return {
+      total,
+      online,
+      offline,
+      unknown,
+      };
+      }
+
+    useEffect(() => {
+      setTotals(getStatuses());
+      // console.log(getStatuses());
+    }, [devices]);
 
   return (
     <>
@@ -49,6 +100,20 @@ const MainMap = ({ filteredPositions, selectedPosition, onEventsClick }) => {
         <MapDefaultCamera />
         <MapSelectedDevice />
         <PoiMap />
+        <div style={boxContainer}>
+          <div style={{ ...boxStyle, backgroundColor: "#0096c7" }}>
+            {totals?.total || 0}
+          </div>
+          <div style={{ ...boxStyle, backgroundColor: "#5bb450" }}>
+            {totals?.online || 0}
+          </div>
+          <div style={{ ...boxStyle, backgroundColor: "#ffa652" }}>
+            {totals?.unknown || 0}
+          </div>
+          <div style={{ ...boxStyle, backgroundColor: "#ff2c2c" }}>
+            {totals?.offline || 0}
+          </div>
+        </div>
       </MapView>
       <MapScale />
       <MapCurrentLocation />

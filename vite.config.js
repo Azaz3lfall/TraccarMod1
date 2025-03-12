@@ -4,9 +4,13 @@ import svgr from 'vite-plugin-svgr';
 import { VitePWA } from 'vite-plugin-pwa';
 
 /* eslint-disable no-template-curly-in-string */
+
 export default defineConfig(() => ({
   server: {
     port: 3000,
+	allowedHosts: [
+		'dev.rastreadorautoram.com.br', // Adicione aqui
+    ],
     proxy: {
       '/api/socket': 'ws://localhost:8082',
       '/api': 'http://localhost:8082',
