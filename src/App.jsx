@@ -11,6 +11,7 @@ import { sessionActions } from './store';
 import UpdateController from './UpdateController';
 import TermsDialog from './common/components/TermsDialog';
 import Loader from './common/components/Loader';
+import GestaoPage from './other/GestaoPage';
 
 const useStyles = makeStyles(() => ({
   page: {
@@ -75,11 +76,11 @@ const App = () => {
       <div className={classes.page}>
         <Outlet />
       </div>
-      {!desktop && (
+{/*       {!desktop && (
         <div className={classes.menu}>
           <BottomMenu />
         </div>
-      )}
+      )} */}
     </>
   );
 };

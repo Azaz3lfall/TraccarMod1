@@ -25,29 +25,11 @@ const BaseCommandView = ({ deviceId, item, setItem }) => {
     }
   }, [availableAttributes, item]);
 
-  const updateType = (type) => {
-    const defaults = {};
-    availableAttributes[type]?.forEach((attribute) => {
-      switch (attribute.type) {
-        case 'boolean':
-          defaults[attribute.key] = false;
-          break;
-        case 'number':
-          defaults[attribute.key] = 0;
-          break;
-        default:
-          defaults[attribute.key] = '';
-          break;
-      }
-    });
-    setItem({ ...item, type, attributes: defaults });
-  };
-
   return (
     <>
       <SelectField
         value={item.type}
-        onChange={(e) => updateType(e.target.value)}
+        onChange={(e) => setItem({ ...item, type: e.target.value, attributes: {} })}
         endpoint={deviceId ? `/api/commands/types?${new URLSearchParams({ deviceId }).toString()}` : '/api/commands/types'}
         keyGetter={(it) => it.type}
         titleGetter={(it) => t(prefixString('command', it.type))}
@@ -86,24 +68,8 @@ const BaseCommandView = ({ deviceId, item, setItem }) => {
       })}
       {textEnabled && (
         <FormControlLabel
-          control={(
-            <Checkbox
-              checked={item.textChannel}
-              onChange={(e) => setItem({ ...item, textChannel: e.target.checked })}
-            />
-          )}
+          control={<Checkbox checked={item.textChannel} onChange={(event) => setItem({ ...item, textChannel: event.target.checked })} />}
           label={t('commandSendSms')}
-        />
-      )}
-      {!item.textChannel && (
-        <FormControlLabel
-          control={(
-            <Checkbox
-              checked={item.attributes?.noQueue}
-              onChange={(e) => setItem({ ...item, attributes: { ...item?.attributes, noQueue: e.target.checked } })}
-            />
-          )}
-          label={t('commandNoQueue')}
         />
       )}
     </>

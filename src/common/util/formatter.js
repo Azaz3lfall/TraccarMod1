@@ -157,3 +157,5 @@ export const formatNotificationTitle = (t, notification, includeId) => {
   }
   return title;
 };
+// calculo da duração de minutos para "1h 15m"
+export const formatDateTime = (value) => formatTime(value);

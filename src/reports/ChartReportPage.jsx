@@ -1,10 +1,10 @@
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import {
-  FormControl, InputLabel, Select, MenuItem, useTheme,
+  FormControl, InputLabel, Select, MenuItem, Paper, Typography,
 } from '@mui/material';
 import {
-  Brush, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  AreaChart, Area, Brush, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine,
 } from 'recharts';
 import ReportFilter from './components/ReportFilter';
 import { formatTime } from '../common/util/formatter';
@@ -19,11 +19,35 @@ import {
 } from '../common/util/converter';
 import useReportStyles from './common/useReportStyles';
 
+const CustomTooltip = ({ active, payload, label, positionAttributes, t }) => {
+  if (active && payload && payload.length) {
+    const pointData = payload[0].payload;
+    const primaryDataKey = payload[0].dataKey;
+    const attributeName = positionAttributes[primaryDataKey]?.name || primaryDataKey;
+    const unit = positionAttributes[primaryDataKey]?.unit || '';
+
+    return (
+      <Paper elevation={3} sx={{ padding: '12px', minWidth: '180px', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+        <Typography variant="body2" fontWeight="bold" gutterBottom>
+          {formatTime(label, 'seconds')}
+        </Typography>
+        <Typography variant="body2" style={{ color: '#8884d8' }}>
+          {`${attributeName}: ${payload[0].value} ${unit}`}
+        </Typography>
+        {pointData.ignition !== undefined && (
+          <Typography variant="caption" display="block" color="text.secondary">
+            {t('positionIgnition')}: {pointData.ignition ? t('sharedOn') : t('sharedOff')}
+          </Typography>
+        )}
+      </Paper>
+    );
+  }
+  return null;
+};
+
 const ChartReportPage = () => {
   const classes = useReportStyles();
-  const theme = useTheme();
   const t = useTranslation();
-
   const positionAttributes = usePositionAttributes(t);
 
   const distanceUnit = useAttributePreference('distanceUnit');
@@ -35,11 +59,6 @@ const ChartReportPage = () => {
   const [types, setTypes] = useState(['speed']);
   const [type, setType] = useState('speed');
   const [timeType, setTimeType] = useState('fixTime');
-
-  const values = items.map((it) => it[type]);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
-  const valueRange = maxValue - minValue;
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
     const query = new URLSearchParams({ deviceId, from, to });
@@ -63,24 +82,33 @@ const ChartReportPage = () => {
             const definition = positionAttributes[key] || {};
             switch (definition.dataType) {
               case 'speed':
-                formatted[key] = speedFromKnots(value, speedUnit).toFixed(2);
+                // CORREÇÃO: Removido '?' da atribuição
+                formatted[key] = Number(speedFromKnots(value, speedUnit).toFixed(2));
                 break;
               case 'altitude':
-                formatted[key] = altitudeFromMeters(value, altitudeUnit).toFixed(2);
+                // CORREÇÃO: Removido '?' da atribuição
+                formatted[key] = Number(altitudeFromMeters(value, altitudeUnit).toFixed(2));
                 break;
               case 'distance':
-                formatted[key] = distanceFromMeters(value, distanceUnit).toFixed(2);
+                // CORREÇÃO: Removido '?' da atribuição
+                formatted[key] = Number(distanceFromMeters(value, distanceUnit).toFixed(2));
                 break;
               case 'volume':
-                formatted[key] = volumeFromLiters(value, volumeUnit).toFixed(2);
+                // CORREÇÃO: Removido '?' da atribuição
+                formatted[key] = Number(volumeFromLiters(value, volumeUnit).toFixed(2));
                 break;
               case 'hours':
-                formatted[key] = (value / 1000).toFixed(2);
+                // CORREÇÃO: Removido '?' da atribuição
+                formatted[key] = Number((value / 1000).toFixed(2));
                 break;
               default:
+                // CORREÇÃO: Removido '?' da atribuição
                 formatted[key] = value;
                 break;
             }
+          } else if (key === 'ignition') {
+            // CORREÇÃO: Removido '?' da atribuição
+            formatted[key] = value;
           }
         });
         return formatted;
@@ -97,6 +125,12 @@ const ChartReportPage = () => {
       throw Error(await response.text());
     }
   });
+
+  const values = items.map((it) => it[type]).filter((v) => typeof v === 'number');
+  const minValue = values.length ? Math.min(...values) : 0;
+  const maxValue = values.length ? Math.max(...values) : 0;
+  const averageValue = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+  const valueRange = maxValue - minValue;
 
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportChart']}>
@@ -135,46 +169,25 @@ const ChartReportPage = () => {
       {items.length > 0 && (
         <div className={classes.chart}>
           <ResponsiveContainer>
-            <LineChart
+            <AreaChart
               data={items}
-              margin={{
-                top: 10, right: 40, left: 0, bottom: 10,
-              }}
+              margin={{ top: 10, right: 40, left: 0, bottom: 10 }}
             >
-              <XAxis
-                stroke={theme.palette.text.primary}
-                dataKey={timeType}
-                type="number"
-                tickFormatter={(value) => formatTime(value, 'time')}
-                domain={['dataMin', 'dataMax']}
-                scale="time"
-              />
-              <YAxis
-                stroke={theme.palette.text.primary}
-                type="number"
-                tickFormatter={(value) => value.toFixed(2)}
-                domain={[minValue - valueRange / 5, maxValue + valueRange / 5]}
-              />
-              <CartesianGrid stroke={theme.palette.divider} strokeDasharray="3 3" />
-              <Tooltip
-                contentStyle={{ backgroundColor: theme.palette.background.default, color: theme.palette.text.primary }}
-                formatter={(value, key) => [value, positionAttributes[key]?.name || key]}
-                labelFormatter={(value) => formatTime(value, 'seconds')}
-              />
-              <Brush
-                dataKey={timeType}
-                height={30}
-                stroke={theme.palette.primary.main}
-                tickFormatter={() => ''}
-              />
-              <Line
-                type="monotone"
-                dataKey={type}
-                stroke={theme.palette.primary.main}
-                dot={false}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
+              <defs>
+                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis dataKey={timeType} type="number" tickFormatter={(value) => formatTime(value, 'time')} domain={['dataMin', 'dataMax']} scale="time" />
+              <YAxis type="number" tickFormatter={(value) => value.toFixed(1)} domain={values.length > 1 ? [minValue - valueRange / 5, maxValue + valueRange / 5] : [minValue - 10, maxValue + 10]} allowDataOverflow />
+              <CartesianGrid strokeDasharray="3 3" />
+              <Tooltip content={<CustomTooltip positionAttributes={positionAttributes} t={t} />} />
+              <Area type="monotone" dataKey={type} stroke="#8884d8" strokeWidth={2} fill="url(#chartGradient)" activeDot={{ r: 6 }} dot={false} />
+              <ReferenceLine y={maxValue} label={{ value: `Máx: ${maxValue.toFixed(1)}`, position: 'right', fill: 'red' }} stroke="red" strokeDasharray="3 3" />
+              <ReferenceLine y={averageValue} label={{ value: `Média: ${averageValue.toFixed(1)}`, position: 'right', fill: 'green' }} stroke="green" strokeDasharray="3 3" />
+              <Brush dataKey={timeType} height={30} stroke="#8884d8" tickFormatter={(value) => formatTime(value, 'time')} />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       )}

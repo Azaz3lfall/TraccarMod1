@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import {
   FormControl, InputLabel, Select, MenuItem, Button, TextField, Typography,
 } from '@mui/material';
-import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import useReportStyles from '../common/useReportStyles';
+import { useDispatch, useSelector } from 'react-redux';
 import { devicesActions, reportsActions } from '../../store';
 import SplitButton from '../../common/components/SplitButton';
 import SelectField from '../../common/components/SelectField';
@@ -186,7 +186,7 @@ const ReportFilter = ({
             disabled={disabled}
             onClick={() => handleClick('json')}
           >
-            <Typography variant="button" noWrap>{t(loading ? 'sharedLoading' : 'reportShow')}</Typography>
+            <Typography variant="button" noWrap>{t('reportShow')}</Typography>
           </Button>
         ) : (
           <SplitButton

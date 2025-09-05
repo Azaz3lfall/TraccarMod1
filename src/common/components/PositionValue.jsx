@@ -63,15 +63,15 @@ const PositionValue = ({ position, property, attribute }) => {
         return formatAltitude(value, altitudeUnit, t);
       case 'power':
       case 'battery':
-        return value != null ? formatVoltage(value, t) : '';
+        return formatVoltage(value, t);
       case 'batteryLevel':
-        return value != null ? formatPercentage(value) : '';
+        return value != null ? formatPercentage(value, t) : '';
       case 'volume':
         return value != null ? formatVolume(value, volumeUnit, t) : '';
       case 'fuelConsumption':
         return value != null ? formatConsumption(value, t) : '';
       case 'coolantTemp':
-        return value != null ? formatTemperature(value) : '';
+        return formatTemperature(value);
       case 'alarm':
         return formatAlarm(value, t);
       case 'odometer':
@@ -93,14 +93,6 @@ const PositionValue = ({ position, property, attribute }) => {
     }
   };
 
-  if (key === 'address') {
-    return <AddressValue latitude={position.latitude} longitude={position.longitude} originalAddress={value} />;
-  }
-
-  if (value === undefined || value === null) {
-    return '';
-  }
-
   switch (key) {
     case 'image':
     case 'video':
@@ -115,12 +107,23 @@ const PositionValue = ({ position, property, attribute }) => {
           {!deviceReadonly && <Link component={RouterLink} underline="none" to={`/settings/accumulators/${position.deviceId}`}>&#9881;</Link>}
         </>
       );
+    case 'address':
+      return <AddressValue latitude={position.latitude} longitude={position.longitude} originalAddress={value} />;
     case 'network':
-      return <Link component={RouterLink} underline="none" to={`/network/${position.id}`}>{t('sharedInfoTitle')}</Link>;
+      if (value) {
+        return <Link component={RouterLink} underline="none" to={`/network/${position.id}`}>{t('sharedInfoTitle')}</Link>;
+      }
+      return '';
     case 'geofenceIds':
-      return <GeofencesValue geofenceIds={value} />;
+      if (value) {
+        return <GeofencesValue geofenceIds={value} />;
+      }
+      return '';
     case 'driverUniqueId':
-      return <DriverValue driverUniqueId={value} />;
+      if (value) {
+        return <DriverValue driverUniqueId={value} />;
+      }
+      return '';
     default:
       return formatValue(value);
   }

@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Button, Dialog, DialogActions, DialogContent, FormControl, InputLabel, MenuItem, Select, TextField, Autocomplete,
 } from '@mui/material';
-
 import { createFilterOptions } from '@mui/material/useAutocomplete';
 import { makeStyles } from '@mui/styles';
 import { useTranslation } from '../../common/components/LocalizationProvider';
@@ -21,26 +20,38 @@ const AddAttributeDialog = ({ open, onResult, definitions }) => {
   const classes = useStyles();
   const t = useTranslation();
 
+  // Initialize with empty string to prevent undefined errors
+  const [key, setKey] = useState('');
+  const [type, setType] = useState('string');
+
   const filter = createFilterOptions({
-    stringify: (option) => option.name,
+    stringify: (option) => option?.name ?? '', // Safe navigation operator
   });
 
-  const options = useMemo(() => Object.entries(definitions).map(([key, value]) => ({
+  const options = Object.entries(definitions).map(([key, value]) => ({
     key,
-    name: value.name || key,
+    name: value.name,
     type: value.type,
-  })).sort((a, b) => a.name.localeCompare(b.name)), [definitions]);
-
-  const [key, setKey] = useState();
-  const [type, setType] = useState('string');
+  }));
 
   return (
     <Dialog open={open} fullWidth maxWidth="xs">
       <DialogContent className={classes.details}>
         <Autocomplete
           onChange={(_, option) => {
-            setKey(option && typeof option === 'object' ? option.key : option);
-            if (option && option.type) {
+            // Handle null/undefined case explicitly
+            if (!option) {
+              setKey('');
+              setType('string');
+              return;
+            }
+            
+            // Handle object vs string cases
+            const selectedKey = typeof option === 'object' ? option.key : option;
+            setKey(selectedKey);
+            
+            // Only update type if it exists
+            if (option?.type) {
               setType(option.type);
             }
           }}
@@ -55,7 +66,7 @@ const AddAttributeDialog = ({ open, onResult, definitions }) => {
             return filtered;
           }}
           options={options}
-          getOptionLabel={(option) => (option && typeof option === 'object' ? option.name : option)}
+          getOptionLabel={(option) => option?.name ?? ''}
           renderOption={(props, option) => (
             <li {...props}>
               {option.name}
@@ -66,9 +77,10 @@ const AddAttributeDialog = ({ open, onResult, definitions }) => {
           )}
           freeSolo
         />
+
         <FormControl
           fullWidth
-          disabled={key in definitions}
+          disabled={!key || key in definitions}
         >
           <InputLabel>{t('sharedType')}</InputLabel>
           <Select
@@ -82,6 +94,7 @@ const AddAttributeDialog = ({ open, onResult, definitions }) => {
           </Select>
         </FormControl>
       </DialogContent>
+
       <DialogActions>
         <Button
           color="primary"

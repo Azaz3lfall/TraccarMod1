@@ -1,26 +1,25 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState } from "react";
 
-import {
-  Typography, AppBar, Toolbar, IconButton,
-} from '@mui/material';
-import makeStyles from '@mui/styles/makeStyles';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useEffectAsync } from '../reactHelper';
-import { useTranslation } from '../common/components/LocalizationProvider';
-import MapView from '../map/core/MapView';
-import MapCamera from '../map/MapCamera';
-import MapPositions from '../map/MapPositions';
-import MapGeofence from '../map/MapGeofence';
-import StatusCard from '../common/components/StatusCard';
-import { formatNotificationTitle } from '../common/util/formatter';
-import MapScale from '../map/MapScale';
+import { Typography, AppBar, Toolbar, IconButton } from "@mui/material";
+import makeStyles from "@mui/styles/makeStyles";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useNavigate, useParams } from "react-router-dom";
+import { useEffectAsync } from "../reactHelper";
+import { useTranslation } from "../common/components/LocalizationProvider";
+import MapView from "../map/core/MapView";
+import MapCamera from "../map/MapCamera";
+import MapPositions from "../map/MapPositions";
+import MapGeofence from "../map/MapGeofence";
+import { formatNotificationTitle } from "../common/util/formatter";
+import MapScale from "../map/MapScale";
+import StatusCardDesktop from "../common/components/StatusCardDesktop";
+import StatusCardMobile from "../common/components/StatusCardMobile";
 
 const useStyles = makeStyles(() => ({
   root: {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
   },
   toolbar: {
     zIndex: 1,
@@ -41,16 +40,20 @@ const EventPage = () => {
   const [position, setPosition] = useState();
   const [showCard, setShowCard] = useState(false);
 
-  const formatType = (event) => formatNotificationTitle(t, {
-    type: event.type,
-    attributes: {
-      alarms: event.attributes.alarm,
-    },
-  });
+  const formatType = (event) =>
+    formatNotificationTitle(t, {
+      type: event.type,
+      attributes: {
+        alarms: event.attributes.alarm,
+      },
+    });
 
-  const onMarkerClick = useCallback((positionId) => {
-    setShowCard(!!positionId);
-  }, [setShowCard]);
+  const onMarkerClick = useCallback(
+    (positionId) => {
+      setShowCard(!!positionId);
+    },
+    [setShowCard]
+  );
 
   useEffectAsync(async () => {
     if (id) {
@@ -81,7 +84,12 @@ const EventPage = () => {
     <div className={classes.root}>
       <AppBar color="inherit" position="static" className={classes.toolbar}>
         <Toolbar>
-          <IconButton color="inherit" edge="start" sx={{ mr: 2 }} onClick={() => navigate('/')}>
+          <IconButton
+            color="inherit"
+            edge="start"
+            sx={{ mr: 2 }}
+            onClick={() => navigate("/")}
+          >
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6">{event && formatType(event)}</Typography>
@@ -90,18 +98,38 @@ const EventPage = () => {
       <div className={classes.mapContainer}>
         <MapView>
           <MapGeofence />
-          {position && <MapPositions positions={[position]} onClick={onMarkerClick} titleField="fixTime" />}
+          {position && (
+            <MapPositions
+              positions={[position]}
+              onClick={onMarkerClick}
+              titleField="fixTime"
+            />
+          )}
         </MapView>
         <MapScale />
-        {position && <MapCamera latitude={position.latitude} longitude={position.longitude} />}
-        {position && showCard && (
-          <StatusCard
+        {position && (
+          <MapCamera
+            latitude={position.latitude}
+            longitude={position.longitude}
+          />
+        )}
+
+        {position && showCard  &&
+          (desktop ? (
+            <StatusCardDesktop
             deviceId={position.deviceId}
             position={position}
             onClose={() => setShowCard(false)}
             disableActions
-          />
-        )}
+            />
+          ) : (
+            <StatusCardMobile
+            deviceId={position.deviceId}
+            position={position}
+            onClose={() => setShowCard(false)}
+            disableActions
+            />
+          ))}
       </div>
     </div>
   );

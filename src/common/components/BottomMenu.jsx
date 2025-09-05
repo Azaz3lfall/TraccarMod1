@@ -27,7 +27,7 @@ const BottomMenu = () => {
   const user = useSelector((state) => state.session.user);
   const socket = useSelector((state) => state.session.socket);
 
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [anchorElAccount, setAnchorElAccount] = useState(null);
 
   const currentSelection = () => {
     if (location.pathname === `/settings/user/${user.id}`) {
@@ -43,12 +43,12 @@ const BottomMenu = () => {
   };
 
   const handleAccount = () => {
-    setAnchorEl(null);
+    setAnchorElAccount(null);
     navigate(`/settings/user/${user.id}`);
   };
 
   const handleLogout = async () => {
-    setAnchorEl(null);
+    setAnchorElAccount(null);
 
     const notificationToken = window.localStorage.getItem('notificationToken');
     if (notificationToken && !user.readonly) {
@@ -88,7 +88,7 @@ const BottomMenu = () => {
         navigate('/settings/preferences');
         break;
       case 'account':
-        setAnchorEl(event.currentTarget);
+        setAnchorElAccount(event.currentTarget);
         break;
       case 'logout':
         handleLogout();
@@ -120,7 +120,7 @@ const BottomMenu = () => {
           <BottomNavigationAction label={t('settingsUser')} icon={<PersonIcon />} value="account" />
         )}
       </BottomNavigation>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+      <Menu anchorEl={anchorElAccount} open={Boolean(anchorElAccount)} onClose={() => setAnchorElAccount(null)}>
         <MenuItem onClick={handleAccount}>
           <Typography color="textPrimary">{t('settingsUser')}</Typography>
         </MenuItem>

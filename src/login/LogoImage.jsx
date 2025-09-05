@@ -2,16 +2,14 @@ import React from 'react';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { makeStyles } from '@mui/styles';
-import Logo from '../resources/images/logo.svg?react';
+import Logo from '../resources/images/LogoRam.png';
 
 const useStyles = makeStyles((theme) => ({
   image: {
-    alignSelf: 'center',
-    maxWidth: '240px',
-    maxHeight: '120px',
-    width: 'auto',
-    height: 'auto',
-    margin: theme.spacing(2),
+    display: 'block',
+    maxWidth: '100%', // permite que a imagem não ultrapasse o container
+    height: 'auto',    // mantém a proporção
+    margin: '0 auto',  // centraliza horizontalmente
   },
 }));
 
@@ -26,11 +24,11 @@ const LogoImage = ({ color }) => {
 
   if (logo) {
     if (expanded && logoInverted) {
-      return <img className={classes.image} src={logoInverted} alt="" />;
+      return <img className={classes.image} src={logo} alt="" />;
     }
     return <img className={classes.image} src={logo} alt="" />;
   }
-  return <Logo className={classes.image} style={{ color }} />;
+  return <img className={classes.image} src={Logo} alt="" />;
 };
 
 export default LogoImage;
