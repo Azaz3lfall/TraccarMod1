@@ -405,8 +405,9 @@ const GestaoFrotaPage = () => {
                 throw new Error(`Falha na sincronização: ${errorText}`);
             }
             const result = await response.json();
-            alert(`Sincronização concluída! Novos veículos adicionados: ${result.new_vehicles}.`);
-            await fetchData();
+            // AQUI: A mensagem de alerta agora é mais detalhada
+            alert(`Sincronização concluída! Novos veículos adicionados: ${result.new_vehicles}. Veículos atualizados: ${result.updated_vehicles}.`);
+            await fetchData(); // Recarrega os dados para mostrar as atualizações
         } catch (err) {
             setError(err.message);
             alert(`Erro na sincronização: ${err.message}`);
