@@ -32,7 +32,9 @@ import jsPDF from 'jspdf';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import 'jspdf-autotable';
+import { applyPlugin as applyAutoTablePlugin } from 'jspdf-autotable';
+
+applyAutoTablePlugin(jsPDF);
 
 // Fix for default Leaflet icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -85,7 +87,7 @@ const formatNameForUsername = (name) => {
 // COMPONENTE PRINCIPAL DA APLICAÇÃO
 // =============================================================================
 const GestaoFrotaPage = () => {
-   
+    
     // --- ESTADOS DO COMPONENTE ---
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [vehicles, setVehicles] = useState([]);
@@ -416,7 +418,7 @@ const GestaoFrotaPage = () => {
         }
     };
 
-    // --- USEEFFECTS ---
+    // --- USEFFECTS ---
     useEffect(() => {
         fetchData();
         fetchDrivers();
@@ -1008,56 +1010,79 @@ const GestaoFrotaPage = () => {
     };
 
     const handleExportPDF = (data, columns, filename) => {
-        const doc = new jsPDF();
-        
-        // Obtém os nomes das colunas para o cabeçalho da tabela
-        const finalColumns = columns.map(col => col.headerName);
-        
-        // Mapeia os dados, aplicando as formatações necessárias
-        const finalData = data.map(item =>
-            columns.map(col => {
-                const value = item[col.field];
+        try {
+            if (!data || data.length === 0) {
+                alert("Não há dados para exportar.");
+                return;
+            }
+    
+            // Cria uma nova instância de jsPDF
+            const doc = new jsPDF();
+    
+            // Essa é a parte CRUCIAL:
+            // Verifica explicitamente se a função 'autoTable' existe
+            if (typeof doc.autoTable !== 'function') {
+                // Se não existir, aplica o plugin novamente
+                applyAutoTablePlugin(jsPDF);
                 
-                // Aplica a formatação com base no nome do campo (field)
-                if (col.field === 'valor' || col.field === 'total_cost') {
-                    return formatCurrency(value);
+                // Faz uma nova verificação para ter certeza
+                if (typeof doc.autoTable !== 'function') {
+                    throw new Error("A biblioteca jspdf-autotable não foi carregada corretamente. Por favor, verifique as dependências.");
                 }
-                if (col.field === 'refuel_date' || col.field === 'end_date' || col.field === 'data_custo') {
-                    return formatDate(value);
-                }
-                if (col.field === 'is_round_trip' || col.field === 'viagem_id') {
-                    return value ? 'Sim' : 'Não';
-                }
-                if (col.field === 'vehicle_id') {
-                    // Busca o nome do veículo na lista `vehicles`
-                    return vehicles.find(v => v.id === value)?.name || 'N/A';
-                }
-                if (col.field === 'odometer_atual' && !value) {
-                    return item.odometer; // Lida com o caso específico do odometer_atual
-                }
-                if (col.field === 'consumo_por_trecho') {
-                    return value ? Number(value).toFixed(2) : 'N/A';
-                }
-                if (col.field === 'distancia_percorrida') {
-                    return value ? `${Number(value).toFixed(2)} Km` : 'N/A';
-                }
-                
-                // Retorna o valor original para todos os outros campos
-                return value;
-            })
-        );
-        
-        // Gera a tabela no PDF
-        doc.autoTable({
-            head: [finalColumns],
-            body: finalData,
-            startY: 20,
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [41, 128, 185] },
-        });
-        
-        // Salva o arquivo
-        doc.save(`${filename}.pdf`);
+            }
+            
+            // O resto do seu código pode continuar normalmente
+            const finalColumns = columns.map(col => col.headerName);
+            
+            const finalData = data.map(item =>
+                columns.map(col => {
+                    const value = item[col.field];
+                    try {
+                        switch (col.field) {
+                            case 'valor':
+                            case 'total_cost':
+                                return value != null ? formatCurrency(value) : 'R$ 0,00';
+                            case 'refuel_date':
+                            case 'end_date':
+                            case 'data_custo':
+                                return value ? formatDate(value) : 'N/A';
+                            case 'is_round_trip':
+                            case 'viagem_id':
+                                return value ? 'Sim' : 'Não';
+                            case 'vehicle_id':
+                                return vehicles.find(v => v.id === value)?.name || 'N/A';
+                            case 'odometer_atual':
+                                return value || item.odometer || 'N/A';
+                            case 'consumo_por_trecho':
+                                return value != null && !isNaN(value) ? `${Number(value).toFixed(2)} Km/L` : 'N/A';
+                            case 'distancia_percorrida':
+                                return value != null && !isNaN(value) ? `${Number(value).toFixed(2)} Km` : 'N/A';
+                            default:
+                                return value;
+                        }
+                    } catch (e) {
+                        console.error(`Erro ao formatar o campo ${col.field}:`, e);
+                        return 'Erro de formatação';
+                    }
+                })
+            );
+            
+            // Agora, o 'doc.autoTable' tem a garantia de existir
+            doc.autoTable({
+                head: [finalColumns],
+                body: finalData,
+                startY: 20,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [41, 128, 185] },
+            });
+    
+            doc.save(`${filename}.pdf`);
+            console.log(`PDF ${filename}.pdf gerado com sucesso.`);
+    
+        } catch (error) {
+            console.error("Falha geral ao gerar o PDF:", error);
+            alert(`Não foi possível gerar o relatório. Detalhes: ${error.message}`);
+        }
     };
     
     // -- Lógica de Mapas e Imagens --
@@ -1348,7 +1373,7 @@ const GestaoFrotaPage = () => {
                         <Paper sx={{ p: 2, height: 500 }}>
                             <Typography variant="h6" gutterBottom>Histórico de Abastecimentos</Typography>
                             <Box sx={{ overflowX: 'auto', height: '100%', width: '100%' }}>
-                                <DataGrid rows={allRefuels} columns={[{ field: 'vehicle_id', headerName: 'Veículo', flex: 1, minWidth: 150, renderCell: (p) => vehicles.find(v => v.id === p.value)?.name || 'N/A' }, { field: 'refuel_date', headerName: 'Data', flex: 1, minWidth: 200, renderCell: (params) => formatDate(params.value) }, { field: 'posto_nome', headerName: 'Posto', flex: 1, minWidth: 150 }, { field: 'cidade', headerName: 'Cidade', flex: 1, minWidth: 150 }, { field: 'odometer', headerName: 'Hodômetro', flex: 1, minWidth: 150 }, { field: 'liters_filled', headerName: 'Litros', flex: 1, minWidth: 100 }, { field: 'total_cost', headerName: 'Valor Total', flex: 1, minWidth: 150, renderCell: (params) => formatCurrency(params.value) }, { field: 'actions', headerName: 'Ações', flex: 1, minWidth: 150, sortable: false, renderCell: (params) => (<Box sx={{ display: 'flex', gap: 1 }}><IconButton color="primary" onClick={() => handleOpenEditRefuelModal(params.row)}><EditIcon /></IconButton><IconButton color="error" onClick={() => { setSelectedRefuelToDelete(params.row); setDeleteRefuelDialogOpen(true); }}><DeleteIcon /></IconButton></Box>) }]} loading={loadingRefuels} pageSize={5} rowsPerPageOptions={[5]} disableSelectionOnClick />
+                                <DataGrid rows={allRefuels} columns={[{ field: 'vehicle_id', headerName: 'Veículo', flex: 1, minWidth: 150, renderCell: (p) => vehicles.find(v => v.id === p.value)?.name || 'N/A' }, { field: 'refuel_date', headerName: 'Data', flex: 1, minWidth: 200, renderCell: (params) => formatDate(params.value) }, { field: 'posto_nome', headerName: 'Posto', flex: 1, minWidth: 150 }, { field: 'cidade', headerName: 'Cidade', flex: 1, minWidth: 150 }, { field: 'odometer', headerName: 'Hodômetro', flex: 1, minWidth: 150 }, { field: 'liters_filled', headerName: 'Litros', flex: 1, minWidth: 100 }, { field: 'total_cost', headerName: 'Valor Total', flex: 1, minWidth: 150, renderCell: (params) => formatCurrency(params.value) }, { field: 'actions', headerName: 'Ações', flex: 1, minWidth: 150, sortable: false, renderCell: (params) => (<Box sx={{ display: 'flex', gap: 1 }}><IconButton color="primary" onClick={() => handleOpenEditRefuelModal(params.row)}><EditIcon /></IconButton><IconButton color="error" onClick={() => { setSelectedRefuelToDelete(params.row); setDeleteRefuelDialogOpen(true); }}><DeleteIcon /></IconButton><Button variant="outlined" size="small" startIcon={<ImageIcon />} onClick={() => handleOpenImageModal({ foto_bomba: params.row.foto_bomba, foto_odometro: params.row.foto_odometro })}>Ver Fotos</Button></Box>) }]} loading={loadingRefuels} pageSize={5} rowsPerPageOptions={[5]} disableSelectionOnClick />
                             </Box>
                         </Paper>
                     </Grid>
@@ -1859,7 +1884,26 @@ const GestaoFrotaPage = () => {
             </Modal>
 
             <Modal open={imageModalOpen} onClose={handleCloseImageModal}>
-                <Box sx={styleModal}><Typography variant="h6" component="h2">Fotos do Abastecimento</Typography><ImageList sx={{ width: '100%', height: 450 }} cols={1}>{imagesToDisplay.map((item) => (<ImageListItem key={item.img}><img srcSet={`${item.img}?w=248&fit=crop&auto=format&dpr=2 2x`} src={`${item.img}?w=248&fit=crop&auto=format`} alt={item.title} loading="lazy" /><ImageListItemBar title={item.title} /></ImageListItem>))}</ImageList><Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}><Button onClick={handleCloseImageModal}>Fechar</Button></Box></Box>
+                <Box sx={styleModal}>
+                    <Typography variant="h6" component="h2">Fotos do Abastecimento</Typography>
+                    <ImageList sx={{ width: '100%', height: 450 }} cols={1}>
+                        {imagesToDisplay.map((item) => (
+                            <ImageListItem key={item.img}>
+                                <img
+                                    src={`${item.img}`}
+                                    alt={item.title}
+                                    loading="lazy"
+                                />
+                                <ImageListItemBar
+                                    title={item.title}
+                                />
+                            </ImageListItem>
+                        ))}
+                    </ImageList>
+                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button onClick={handleCloseImageModal}>Fechar</Button>
+                    </Box>
+                </Box>
             </Modal>
             <Modal open={editDriverVehiclesModalOpen} onClose={handleCloseEditDriverVehiclesModal}>
                 <Box sx={styleModal}>
