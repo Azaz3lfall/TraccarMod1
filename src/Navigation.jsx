@@ -35,7 +35,7 @@ import LoginPage from "./login/LoginPage";
 import RegisterPage from "./login/RegisterPage";
 import ResetPasswordPage from "./login/ResetPasswordPage";
 import GeofencesPage from "./other/GeofencesPage";
-import GestaoPage from "./other/GestaoPage";
+import { GestaoPageModular } from "./other/gestao";
 import GeofencePage from "./settings/GeofencePage";
 import useQuery from "./common/util/useQuery";
 import { useEffectAsync } from "./reactHelper";
@@ -132,7 +132,7 @@ const Navigation = () => {
           <Route path="attribute" element={<ComputedAttributePage />} />
           <Route path="devices" element={<DevicesPage />} />
           <Route path="geofences" element={<GeofencesPage />} />
-          <Route path="gestao" element={<GestaoPage />} />
+          <Route path="gestao" element={<GestaoPageModular />} />
 
           <Route
             path="device/:id/connections"

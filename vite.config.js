@@ -26,6 +26,14 @@ export default defineConfig(() => ({
         target: 'http://localhost:3666',
         changeOrigin: true,
       },
+      '/auth': {
+        target: 'http://localhost:3666',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:3666',
+        changeOrigin: true,
+      },
     
     },
   },
